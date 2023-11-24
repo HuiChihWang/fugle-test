@@ -4,14 +4,16 @@ import {
   HttpException,
   Logger,
   Query,
-  ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
+import { ThrottleGuard } from './throttle.guard';
 import { CoreService } from './core.service';
 import { QueryDto, ResultResponse } from './core.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Core')
 @Controller()
+@UseGuards(ThrottleGuard)
 export class CoreController {
   constructor(private readonly coreService: CoreService) {}
 
