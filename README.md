@@ -46,19 +46,13 @@ $ pnpm run start:dev
 } 
 ```
 
-2. subscription response (event_name: currency_pair)
+2. subscription response (event_name: `trade`)
 
 ```ts
 {
-  data: {
-    amount: number;
-    buy_order_id: number;
-    id: number;
-    sell_order_id: number;
-    timestamp: number;
-    price: number;
-    type: number;
-  },
+  currencyPair: string;
+  timestamp: number;
+  price: number;
   ohlc: {
     open: number;
     high: number;

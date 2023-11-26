@@ -11,13 +11,8 @@ export class OHLCData {
 }
 
 export class TradeDataFromBitstamp {
-  readonly amount: number;
-  readonly buy_order_id: number;
-  readonly id: number;
-  readonly sell_order_id: number;
   readonly timestamp: number;
   readonly price: number;
-  readonly type: number;
 }
 
 export class TickerSocketMessageFromBitstamp {
@@ -27,6 +22,8 @@ export class TickerSocketMessageFromBitstamp {
 }
 
 export class TradeDataToUser {
-  readonly data: TradeDataFromBitstamp;
+  readonly currencyPair: string;
+  readonly timestamp: number;
+  readonly price: number;
   readonly ohlc: OHLCData;
 }

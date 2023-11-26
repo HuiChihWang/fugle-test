@@ -25,19 +25,20 @@ export class SocketGateway
   constructor(private readonly bitstampService: BitstampService) {}
 
   afterInit() {
-    this.bitstampService.setCallback((message) => {
-      const { currencyPair, data, subscriptions } = message;
-      subscriptions.forEach((subscription) => {
-        const socket = this.mapClientSockets.get(subscription);
-        if (!socket) {
-          return;
-        }
-        socket.emit(currencyPair, {
-          currencyPair,
-          data,
+    this.bitstampService.setCallback(
+      ({ currencyPair, data, subscriptions }) => {
+        Logger.log(
+          `publish trade data ${currencyPair}: ${JSON.stringify(data)}`,
+        );
+        subscriptions.forEach((subscription) => {
+          const socket = this.mapClientSockets.get(subscription);
+          if (!socket) {
+            return;
+          }
+          socket.emit('trade', data);
         });
-      });
-    });
+      },
+    );
   }
 
   handleConnection(@ConnectedSocket() socket: Socket) {

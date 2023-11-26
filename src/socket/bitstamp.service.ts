@@ -17,8 +17,8 @@ type TickerSocketCallback = (message: {
 @Injectable()
 export class BitstampService implements OnModuleInit {
   static readonly SOCKET_URL = 'wss://ws.bitstamp.net';
-  static readonly OHLC_EXPIRE_TIME_SECONDS = 10;
-  static readonly OHLC_STATISTICS_WINDOW_MINUTES = 15;
+  static readonly OHLC_EXPIRE_TIME_SECONDS = 60 * 15;
+  static readonly OHLC_STATISTICS_WINDOW_MINUTES = 1;
 
   private socket: WebSocket;
 
@@ -50,19 +50,20 @@ export class BitstampService implements OnModuleInit {
       const currencyPair = message.channel.split('_')[2];
       const subscriptions = this.registrations.get(currencyPair) || new Set();
 
-      Logger.log(
-        `received trade message from bitstamp (${currencyPair}): ${JSON.stringify(
-          message,
-        )}`,
-      );
+      const extractedData: TradeDataFromBitstamp = {
+        timestamp: message.data.timestamp,
+        price: message.data.price,
+      };
 
-      this.processTradeMessage(message.data, currencyPair).then((tradeData) => {
-        this.callback({
-          data: tradeData,
-          currencyPair,
-          subscriptions,
-        });
-      });
+      this.processTradeMessage(extractedData, currencyPair).then(
+        (tradeData) => {
+          this.callback({
+            data: tradeData,
+            currencyPair,
+            subscriptions,
+          });
+        },
+      );
     });
   }
 
@@ -158,7 +159,9 @@ export class BitstampService implements OnModuleInit {
     );
 
     return {
-      data,
+      currencyPair,
+      timestamp: data.timestamp,
+      price: data.price,
       ohlc: ohlcData,
     };
   }
