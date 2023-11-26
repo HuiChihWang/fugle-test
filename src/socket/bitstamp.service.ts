@@ -127,7 +127,6 @@ export class BitstampService implements OnModuleInit {
           return Logger.error(error);
         }
         this.registrations.delete(currencyPair);
-        this.timeSeriesStoreUtils.deleteData('ohlc', currencyPair);
         Logger.log(`unsubscribed from bitstamp: ${currencyPair}`);
       });
     }
@@ -145,7 +144,7 @@ export class BitstampService implements OnModuleInit {
     currencyPair: string,
   ): Promise<TradeDataToUser> {
     await this.timeSeriesStoreUtils.storeData<TradeDataFromBitstamp>(
-      'ohlc',
+      'trade',
       currencyPair,
       data,
       data.timestamp,
@@ -156,6 +155,14 @@ export class BitstampService implements OnModuleInit {
       currencyPair,
       data.timestamp,
       BitstampService.OHLC_STATISTICS_WINDOW_MINUTES,
+    );
+
+    await this.timeSeriesStoreUtils.storeData<OHLCData>(
+      'ohlc',
+      currencyPair,
+      ohlcData,
+      ohlcData.timestamp,
+      BitstampService.OHLC_EXPIRE_TIME_SECONDS,
     );
 
     return {
@@ -173,7 +180,7 @@ export class BitstampService implements OnModuleInit {
   ): Promise<OHLCData> {
     const dataInRange =
       await this.timeSeriesStoreUtils.queryData<TradeDataFromBitstamp>(
-        'ohlc',
+        'trade',
         currencyPair,
         currentTimeStampSecs - inMinutes * 60,
         currentTimeStampSecs,
