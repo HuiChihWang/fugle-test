@@ -1,5 +1,9 @@
+import { CurrencyPair } from './currecy-pair.enum';
+import { IsEnum } from 'class-validator';
+
 export class SubscribePriceMessage {
-  readonly currencyPairs: string[];
+  @IsEnum(CurrencyPair, { each: true, message: 'Invalid currency pair' })
+  readonly currencyPairs: CurrencyPair[];
 }
 
 export class OHLCData {
@@ -22,7 +26,7 @@ export class TickerSocketMessageFromBitstamp {
 }
 
 export class TradeDataToUser {
-  readonly currencyPair: string;
+  readonly currencyPair: CurrencyPair;
   readonly timestamp: number;
   readonly price: number;
   readonly ohlc: OHLCData;

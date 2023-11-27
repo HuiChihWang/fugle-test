@@ -7,10 +7,11 @@ import {
   TradeDataFromBitstamp,
 } from './socket.dto';
 import { TimeSeriesStoreUtils } from '../utils/time-series-store.util';
+import { CurrencyPair } from './currecy-pair.enum';
 
 type TickerSocketCallback = (message: {
   data: TradeDataToUser;
-  currencyPair: string;
+  currencyPair: CurrencyPair;
   subscriptions: Set<string>;
 }) => void;
 
@@ -22,8 +23,8 @@ export class BitstampService implements OnModuleInit {
 
   private socket: WebSocket;
 
-  private readonly registrations: Map<string, Set<string>> = new Map();
-  private readonly subscriptions: Map<string, Set<string>> = new Map();
+  private readonly registrations: Map<CurrencyPair, Set<string>> = new Map();
+  private readonly subscriptions: Map<string, Set<CurrencyPair>> = new Map();
   private callback: TickerSocketCallback = () => {};
 
   constructor(private readonly timeSeriesStoreUtils: TimeSeriesStoreUtils) {}
@@ -47,7 +48,8 @@ export class BitstampService implements OnModuleInit {
         return;
       }
 
-      const currencyPair = message.channel.split('_')[2];
+      const currencyPairStr = message.channel.split('_')[2];
+      const currencyPair = CurrencyPair[currencyPairStr.toUpperCase()];
       const subscriptions = this.registrations.get(currencyPair) || new Set();
 
       const extractedData: TradeDataFromBitstamp = {
@@ -75,7 +77,7 @@ export class BitstampService implements OnModuleInit {
     return this.subscriptions.get(id) || new Set();
   }
 
-  subscribe(id: string, currencyPair: string) {
+  subscribe(id: string, currencyPair: CurrencyPair) {
     const registration = this.registrations.get(currencyPair) || new Set();
     const subscriptions = this.subscriptions.get(id) || new Set();
 
@@ -105,7 +107,7 @@ export class BitstampService implements OnModuleInit {
       }
   }
 
-  unsubscribe(id: string, currencyPair: string) {
+  unsubscribe(id: string, currencyPair: CurrencyPair) {
     if (!this.registrations.has(currencyPair)) {
       return;
     }
@@ -141,7 +143,7 @@ export class BitstampService implements OnModuleInit {
 
   private async processTradeMessage(
     data: TradeDataFromBitstamp,
-    currencyPair: string,
+    currencyPair: CurrencyPair,
   ): Promise<TradeDataToUser> {
     await this.timeSeriesStoreUtils.storeData<TradeDataFromBitstamp>(
       'trade',

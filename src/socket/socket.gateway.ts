@@ -66,10 +66,9 @@ export class SocketGateway
     const currentSubscriptions = this.bitstampService.getSubscriptions(
       socket.id,
     );
-    const newSubscriptions = new Set(currencyPairs);
     const totalSubscriptions = new Set([
       ...currentSubscriptions,
-      ...newSubscriptions,
+      ...currencyPairs,
     ]);
 
     if (totalSubscriptions.size > this.maxCurrencyPairs) {
