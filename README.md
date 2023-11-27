@@ -87,6 +87,11 @@ doteur, nearusd, neareur, ldousd, ldoeur, dgldusd, dgldeur, dogeusd, dogeeur, su
 pyusdeur
 ```
 
+## Todo
+- Dockerize
+- Unit Test
+- Authentication
+
 ## License
 
 Nest is [MIT licensed](LICENSE).
