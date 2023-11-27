@@ -7,12 +7,17 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { BitstampService } from './bitstamp.service';
 import { SubscribePriceMessage } from './socket.dto';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, UseFilters, UsePipes } from '@nestjs/common';
+import { WsValidationPipe } from './ws-validation.pipe';
+import { WsExceptionFilter } from './ws-exception.filter';
 
+@UseFilters(WsExceptionFilter)
+@UsePipes(WsValidationPipe)
 @WebSocketGateway({ namespace: '/streaming' })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -68,10 +73,7 @@ export class SocketGateway
     ]);
 
     if (totalSubscriptions.size > this.maxCurrencyPairs) {
-      return socket.emit(
-        'error',
-        `too many currency pairs (smaller than ${this.maxCurrencyPairs})`,
-      );
+      throw new WsException(`max currency pairs is ${this.maxCurrencyPairs}`);
     }
 
     currencyPairs.forEach((currencyPair) => {
