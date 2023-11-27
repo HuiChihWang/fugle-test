@@ -62,6 +62,8 @@ $ pnpm run start:dev
   }
 }
 ```
+3. error response (event_name: `error`)
+
 
 3. available currency pairs
 ```
