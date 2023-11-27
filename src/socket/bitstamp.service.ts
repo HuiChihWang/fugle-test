@@ -15,6 +15,8 @@ type TickerSocketCallback = (message: {
   subscriptions: Set<string>;
 }) => void;
 
+type TickerSocketFallback = (id: string, error: Error | string) => void;
+
 @Injectable()
 export class BitstampService implements OnModuleInit {
   static readonly SOCKET_URL = 'wss://ws.bitstamp.net';
@@ -26,7 +28,7 @@ export class BitstampService implements OnModuleInit {
   private readonly registrations: Map<CurrencyPair, Set<string>> = new Map();
   private readonly subscriptions: Map<string, Set<CurrencyPair>> = new Map();
   private callback: TickerSocketCallback = () => {};
-
+  private fallback: TickerSocketFallback = () => {};
   constructor(private readonly timeSeriesStoreUtils: TimeSeriesStoreUtils) {}
 
   onModuleInit() {
@@ -73,6 +75,10 @@ export class BitstampService implements OnModuleInit {
     this.callback = callback;
   }
 
+  setFallback(fallback: TickerSocketFallback) {
+    this.fallback = fallback;
+  }
+
   getSubscriptions(id: string): Set<string> {
     return this.subscriptions.get(id) || new Set();
   }
@@ -91,7 +97,7 @@ export class BitstampService implements OnModuleInit {
         };
         this.socket.send(JSON.stringify(payload), (error) => {
           if (error) {
-            return Logger.error(error);
+            return this.fallback(id, error);
           }
           Logger.log(`subscribed to bitstamp: ${currencyPair}`);
           registration.add(id);
@@ -126,7 +132,7 @@ export class BitstampService implements OnModuleInit {
       };
       this.socket.send(JSON.stringify(payload), (error) => {
         if (error) {
-          return Logger.error(error);
+          return this.fallback(id, error);
         }
         this.registrations.delete(currencyPair);
         Logger.log(`unsubscribed from bitstamp: ${currencyPair}`);

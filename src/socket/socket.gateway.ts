@@ -30,6 +30,13 @@ export class SocketGateway
   constructor(private readonly bitstampService: BitstampService) {}
 
   afterInit() {
+    this.bitstampService.setFallback((id, error) => {
+      const socket = this.mapClientSockets.get(id);
+      if (!socket) {
+        return;
+      }
+      socket.emit('error', error.toString());
+    });
     this.bitstampService.setCallback(
       ({ currencyPair, data, subscriptions }) => {
         Logger.log(
