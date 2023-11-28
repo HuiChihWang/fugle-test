@@ -28,25 +28,32 @@ $ pnpm run start:dev
 [swagger-link](http://localhost:3000/api)
 
 ## Socket (socket.io) Usage
-1. subscribe/unsubscribe (maximum 10 subscription allowed)
+1. connect to socket server (ws://localhost:3000/streaming)
+2. subscribe/unsubscribe (maximum 10 subscription allowed)
 ```json
-// event: subscribe
 {
-  "currencyPairs": [
-    "btcusd"
-  ]
+  "event": "subscribe",
+  "data": {
+    "currencyPairs": [
+      "btceur",
+      "btcusd"
+    ]
+  }
 }
 ```
 ```json
-// event: unsubscribe
 {
-  "currencyPairs": [
-    "btcusd"
-  ]
-} 
+  "event": "unsubscribe",
+  "data": {
+    "currencyPairs": [
+      "btceur",
+      "btcusd"
+    ]
+  }
+}
 ```
 
-2. subscription response (event_name: `trade`)
+2. subscription response (event: `trade`)
 
 ```ts
 {
@@ -62,7 +69,7 @@ $ pnpm run start:dev
   }
 }
 ```
-3. error response (event_name: `error`)
+3. error response (event: `error`)
 
 
 3. available currency pairs
