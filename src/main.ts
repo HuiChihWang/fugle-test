@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { WsAdapter } from '@nestjs/platform-ws';
 
 function setUpSwaggerInApp(path: string, app: INestApplication) {
   const swaggerConfig = new DocumentBuilder()
@@ -15,6 +16,7 @@ function setUpSwaggerInApp(path: string, app: INestApplication) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useWebSocketAdapter(new WsAdapter(app));
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   setUpSwaggerInApp('api', app);
   await app.listen(3000);

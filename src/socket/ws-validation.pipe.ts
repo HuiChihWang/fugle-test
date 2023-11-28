@@ -1,9 +1,4 @@
-import {
-  ArgumentMetadata,
-  Injectable,
-  Logger,
-  ValidationPipe,
-} from '@nestjs/common';
+import { ArgumentMetadata, Injectable, ValidationPipe } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 
 @Injectable()

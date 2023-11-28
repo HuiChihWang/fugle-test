@@ -10,32 +10,34 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { BitstampService } from './bitstamp.service';
-import { SubscribePriceMessage } from './socket.dto';
-import { Server, Socket } from 'socket.io';
+import { SubscribePriceMessage, TradeDataToUser } from './socket.dto';
 import { Logger, UseFilters, UsePipes } from '@nestjs/common';
 import { WsValidationPipe } from './ws-validation.pipe';
 import { WsExceptionFilter } from './ws-exception.filter';
+import { Server, WebSocket as Socket } from 'ws';
+import { SocketManager } from './socket-manager';
 
 @UseFilters(WsExceptionFilter)
 @UsePipes(WsValidationPipe)
-@WebSocketGateway({ namespace: '/streaming' })
+@WebSocketGateway({ path: '/streaming' })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server: Server;
-  private readonly mapClientSockets = new Map<string, Socket>();
-
   private readonly maxCurrencyPairs = 10;
 
-  constructor(private readonly bitstampService: BitstampService) {}
+  constructor(
+    private readonly socketManager: SocketManager,
+    private readonly bitstampService: BitstampService,
+  ) {}
 
   afterInit() {
     this.bitstampService.setFallback((id, error) => {
-      const socket = this.mapClientSockets.get(id);
+      const socket = this.socketManager.getSocket(id);
       if (!socket) {
         return;
       }
-      socket.emit('error', error.toString());
+      this.socketManager.sendMessage<string>(id, 'error', error.toString());
     });
     this.bitstampService.setCallback(
       ({ currencyPair, data, subscriptions }) => {
@@ -43,25 +45,27 @@ export class SocketGateway
           `publish trade data ${currencyPair}: ${JSON.stringify(data)}`,
         );
         subscriptions.forEach((subscription) => {
-          const socket = this.mapClientSockets.get(subscription);
-          if (!socket) {
-            return;
-          }
-          socket.emit('trade', data);
+          this.socketManager.sendMessage<TradeDataToUser>(
+            subscription,
+            'trade',
+            data,
+          );
         });
       },
     );
   }
 
   handleConnection(@ConnectedSocket() socket: Socket) {
-    this.mapClientSockets.set(socket.id, socket);
-    Logger.log(`client ${socket.id} connect to web socket.`);
+    this.socketManager.registerSocket(socket);
+    const socketId = this.socketManager.getSocketId(socket);
+    Logger.log(`client ${socketId} connect to web socket.`);
   }
 
   handleDisconnect(@ConnectedSocket() socket: Socket) {
-    this.bitstampService.unregisterAll(socket.id);
-    this.mapClientSockets.delete(socket.id);
-    Logger.log(`client ${socket.id} disconnect from web socket.`);
+    const socketId = this.socketManager.getSocketId(socket);
+    this.bitstampService.unregisterAll(socketId);
+    this.socketManager.unregisterSocket(socket);
+    Logger.log(`client ${socketId} disconnect from web socket.`);
   }
 
   @SubscribeMessage('subscribe')
@@ -69,10 +73,10 @@ export class SocketGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() payload: SubscribePriceMessage,
   ) {
+    const socketId = this.socketManager.getSocketId(socket);
     const { currencyPairs = [] } = payload;
-    const currentSubscriptions = this.bitstampService.getSubscriptions(
-      socket.id,
-    );
+    const currentSubscriptions =
+      this.bitstampService.getSubscriptions(socketId);
     const totalSubscriptions = new Set([
       ...currentSubscriptions,
       ...currencyPairs,
@@ -83,7 +87,7 @@ export class SocketGateway
     }
 
     currencyPairs.forEach((currencyPair) => {
-      this.bitstampService.subscribe(socket.id, currencyPair);
+      this.bitstampService.subscribe(socketId, currencyPair);
     });
   }
 
@@ -92,9 +96,10 @@ export class SocketGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() payload: SubscribePriceMessage,
   ) {
+    const socketId = this.socketManager.getSocketId(socket);
     const { currencyPairs = [] } = payload;
     currencyPairs.forEach((currencyPair) => {
-      this.bitstampService.unsubscribe(socket.id, currencyPair);
+      this.bitstampService.unsubscribe(socketId, currencyPair);
     });
   }
 }
